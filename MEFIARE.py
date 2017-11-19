@@ -28,11 +28,22 @@ def who_is_winner(state):
         for j in range(game_height - 3):
             if state[i][j] == state[i][j+1] == state[i][j+2] == state[i][j+3]:
                 return state[i][j]
+    # Horizontal win
     for i in range(game_width - 3):
-        # Horizontal win
         for j in range(game_height):
             if state[i][j] == state[i+1][j] == state[i+2][j] == state[i+3][j]:
                 return state[i][j]
+    # Right leaning diagonal win
+    for i in range(game_width - 3):
+        for j in range(game_height - 3:
+            if state[i][j] == state[i+1][j+1] == state[i+2][j+2] == state[i+3][j+3]:
+                return state[i][j]
+    # Left leaning diagonal win
+    for i in range(game_width - 3):
+        for j in range(game_height - 3):
+            if state[i][j+3] == state[i+1][j+2] == state[i+2][j+1] == state[i+3][j]:
+                return state[i][j]
+    return None
 
 
 def play_game():
@@ -48,5 +59,8 @@ def play_game():
         if len(state[his_move]) == game_height:
             print('This move is not allowed')
             continue
-        state
+        state[his_move].append(0)
+        visited_states.append((dump(state), my_move))
         winner = who_is_winner(state)
+        if winner is 1: # 1 == I am winner
+            propogate_game(
