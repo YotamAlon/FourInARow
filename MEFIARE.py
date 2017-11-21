@@ -16,38 +16,54 @@ else:
     db={}
 
 
-def get_move_int(rand, chances):
-    for i in range(len(chances)):
-        if sum(chances[:i+1]) > rand:
+def get_move_int(rand, db, state):
+    if state not in db:
+        db[state] = [1. / game_width for i in range(game_width)]
+    for i in range(game_width):
+        if sum(db[state][:i+1]) > rand:
             return i
 
 
 def print_state(state):
-    for i in range(len(state)):
-        print('|'.join(state[i]))
+    for i in range(game_height - 1, -1, -1):
+        print('|'.join([str(state[j][i])
+                        if len(state[j]) > i else '-'
+                        for j in range(game_width)]))
 
 
 def who_is_winner(state):
     # Vertical win
     for i in range(game_width):
         for j in range(game_height - 3):
-            if state[i][j] == state[i][j+1] == state[i][j+2] == state[i][j+3]:
-                return state[i][j]
+            try:
+                if state[i][j] == state[i][j+1] == state[i][j+2] == state[i][j+3]:
+                    return state[i][j]
+            except IndexError:
+                pass
     # Horizontal win
     for i in range(game_width - 3):
         for j in range(game_height):
-            if state[i][j] == state[i+1][j] == state[i+2][j] == state[i+3][j]:
-                return state[i][j]
+            try:
+                if state[i][j] == state[i+1][j] == state[i+2][j] == state[i+3][j]:
+                    return state[i][j]
+            except IndexError:
+                pass
     # Right leaning diagonal win
     for i in range(game_width - 3):
         for j in range(game_height - 3):
-            if state[i][j] == state[i+1][j+1] == state[i+2][j+2] == state[i+3][j+3]:
-                return state[i][j]
+            try:
+                if state[i][j] == state[i+1][j+1] == state[i+2][j+2] == state[i+3][j+3]:
+                    return state[i][j]
+            except IndexError:
+                pass
     # Left leaning diagonal win
     for i in range(game_width - 3):
         for j in range(game_height - 3):
-            if state[i][j+3] == state[i+1][j+2] == state[i+2][j+1] == state[i+3][j]:
-                return state[i][j]
+            try:
+                if state[i][j+3] == state[i+1][j+2] == state[i+2][j+1] == state[i+3][j]:
+                    return state[i][j]
+            except IndexError:
+                pass
     return None
 
 
@@ -68,7 +84,7 @@ def play_game():
     while True:
         print("Starting a new game:")
         while True:
-            my_move = get_move_int(random(), db[dumps(state)])
+            my_move = get_move_int(random(), db, dumps(state))
             visited_states.append((dumps(state), my_move))
             state[my_move].append(1)
             print_state(state)
@@ -76,21 +92,28 @@ def play_game():
             if winner is not None: # 1 == I am winner
                 propogate_game(winner, visited_states)
                 break
-            his_move = input("Where would you like to play? [1-%d]" % game_width)
-            if len(state[his_move]) == game_height:
+            while True:
+                try:
+                    his_move = int(input("Where would you like to play? [1-%d]\n >> " % game_width))
+                except ValueError:
+                    print('Please select one of the numbers specified.')
+                    continue
+                if his_move - 1 < game_width and len(state[his_move-1]) < game_height:
+                    break
                 print('This move is not allowed')
-                continue
+                    
+            state[his_move-1].append(0)
             winner = who_is_winner(state)
             if winner is not None: # 1 == I am winner
                 propogate_game(winner, visited_states)
                 break
         
         print('I Won! FeelsBadMan for you' if winner else 'You Win! Congrats')
-        While True:
-            another = input("Would you like to play another game? (yes/no)")
+        while True:
+            another = input("Would you like to play another game? (yes/no)\n >> ")
             if another in ['yes', 'no']:
                 break
-             print('yes or no only please.')
+            print('yes or no only please.')
         
         if another == 'no':
             save_db()
