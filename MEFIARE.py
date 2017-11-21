@@ -9,9 +9,14 @@ from os.path import exists
 
 game_width = 7
 game_height = 6
-if exists('4row.db'):
-    db_file=open('4row.db', 'rb')
-    db=pickle.load(db_file)
+db_file_name='4row.db'
+
+if exists(db_file_name):
+    with open(db_file_name, 'rb') as db_file_read:
+        try:
+            db=pickle.load(db_file_read)
+        except EOFError:
+            db={}
 else:
     db={}
 
@@ -74,8 +79,8 @@ def propogate_game(winner, visited_states):
 
 
 def save_db():
-    db_file=open('4row.db', 'wb')
-    pickle.dump(db_file, db)
+    with open(db_file_name, 'wb+') as db_file_write:
+        pickle.dump(db_file_write, db)
 
 
 def play_game():
