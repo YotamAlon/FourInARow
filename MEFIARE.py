@@ -80,7 +80,7 @@ def propogate_game(winner, visited_states):
 
 def save_db():
     with open(db_file_name, 'wb+') as db_file_write:
-        pickle.dump(db_file_write, db)
+        pickle.dump(db, db_file_write)
 
 
 def play_game():
