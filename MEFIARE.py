@@ -82,17 +82,19 @@ def save_db(db):
         pickle.dump(db, db_file_write)
 
 
-def play_game():
+def play_game(training_mode):
     db = load_db()
     state = [[] for i in range(game_width)]
     visited_states = []
     while True:
-        print("Starting a new game:")
+        if not training_mode:
+            print("Starting a new game:")
         while True:
             my_move = get_move_int(random(), db, dumps(state))
             visited_states.append((dumps(state), my_move))
             state[my_move].append(1)
-            print_state(state)
+            if not training_mode:
+                print_state(state)
             winner = who_is_winner(state)
             if winner is not None:  # 1 == I am winner
                 propogate_game(winner, visited_states, db)
@@ -127,6 +129,7 @@ def play_game():
 if __name__ == '__main__':
     import argparse
     parser = argparse.ArgumentParser(description='Play a game of 4 In A Row against MEFIARE')
+    parser.add_argument('-t', '--training-mode', action='store_true', default=False)
     parser.add_argument('-y', '--height', type=int, default=6)
     parser.add_argument('-w', '--width', type=int, default=7)
     parser.add_argument('-f', '--db-file', type=str, default='4row.db')
@@ -135,5 +138,8 @@ if __name__ == '__main__':
     game_width = args.width
     game_height = args.height
     db_file_name = args.db_file
+    if args.training_mode:
+        import signal
+        signal.signal(signal.SIGINT, signal.SIG_IGN)
 
-    play_game()
+    play_game(args.training_mode)
