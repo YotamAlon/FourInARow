@@ -31,7 +31,7 @@ def get_move_int(rand, db, state):
 
 def print_state(state):
     for i in range(game_height - 1, -1, -1):
-        print('|'.join([str(state[j][i])
+        print('|'.join([('X' if state[j][i] else 'O')
                         if len(state[j]) > i else '-'
                         for j in range(game_width)]))
 
@@ -99,7 +99,7 @@ def play_game():
                 break
             while True:
                 try:
-                    his_move = int(input("Where would you like to play? [1-%d]\n >> " % game_width))
+                    his_move = int(input("Where would you like to play next? [1-%d]\n >> " % game_width))
                 except ValueError:
                     print('Please select one of the numbers specified.')
                     continue
