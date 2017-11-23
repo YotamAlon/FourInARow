@@ -1,16 +1,23 @@
 import signal
+was_ctrl_c_pressed = False
 
 
 def ctrl_c_handler(*args):
-    print('\nCaught ctrl-C. Stopping gracefully...')
-    global games_to_play
-    games_to_play = 0
+    global was_ctrl_c_pressed
+    if was_ctrl_c_pressed:
+        import sys
+        sys.exit(0)
+    else:
+        print('\nCaught ctrl-C. Stopping gracefully...')
+        global games_to_play
+        games_to_play = 0
+        was_ctrl_c_pressed = True
 signal.signal(signal.SIGINT, ctrl_c_handler)
 
 
 def get_game_width(text):
     import re
-    pattern = re.search(r'\[1-(\d)\]', text).group(0)[3:-1]
+    pattern = re.search(r'\[1-(\d+)\]', text).group(0)[3:-1]
     return int(pattern)
 
 
@@ -19,16 +26,17 @@ def make_a_move(game_width):
     return str(choice(range(1, game_width + 1)))
 
 
-def play_games():
+def play_games(MEFIARE_args):
     import subprocess
     import time
     started = time.time()
     global games_to_play
     games_played = 0
     games_won = 0
-    MEFIARE = subprocess.Popen(['python', 'MEFIARE.py'],
+    MEFIARE = subprocess.Popen(['python', 'MEFIARE.py'] + MEFIARE_args,
                                stdout=subprocess.PIPE,
-                               stdin=subprocess.PIPE)
+                               stdin=subprocess.PIPE,
+                               preexec_fn=lambda: signal.signal(signal.SIGINT, signal.SIG_IGN))
     print('Spawned MEFIARE')
     print('Now training MEFIARE for {} games'. format(games_to_play))
     while True:
@@ -59,7 +67,10 @@ if __name__ == "__main__":
     import argparse
     parser = argparse.ArgumentParser()
     parser.add_argument('-g', '--games', type=int, default=1)
+    parser.add_argument('-y', '--height', type=str, default='6')
+    parser.add_argument('-w', '--width', type=str, default='7')
+    parser.add_argument('-f', '--db-file', type=str, default='4row.db')
     args = parser.parse_args()
     games_to_play = args.games
-    play_games()
+    play_games(['-y', args.height, '-w', args.width, '-f', args.db_file])
     

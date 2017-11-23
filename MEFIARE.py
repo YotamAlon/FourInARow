@@ -1,24 +1,23 @@
 try:
     import cpickle as pickle
-except:
+except ImportError:
     import pickle
 
-from json import dumps, loads
+from json import dumps
 from random import random
 from os.path import exists
 
-game_width = 7
-game_height = 6
-db_file_name='4row.db'
 
-if exists(db_file_name):
-    with open(db_file_name, 'rb') as db_file_read:
-        try:
-            db=pickle.load(db_file_read)
-        except EOFError:
-            db={}
-else:
-    db={}
+def load_db():
+    if exists(db_file_name):
+        with open(db_file_name, 'rb') as db_file_read:
+            try:
+                db = pickle.load(db_file_read)
+            except EOFError:
+                db = {}
+    else:
+        db = {}
+    return db
 
 
 def get_move_int(rand, db, state):
@@ -72,18 +71,19 @@ def who_is_winner(state):
     return None
 
 
-def propogate_game(winner, visited_states):
+def propogate_game(winner, visited_states, db):
     for state, my_move in visited_states:
         db[state] = [chance * (1.1 - 0.2 * winner) for chance in db[state]]
         db[state][my_move] *= ((0.9 + 0.2 * winner) / (1.1 - 0.2 * winner))
 
 
-def save_db():
+def save_db(db):
     with open(db_file_name, 'wb+') as db_file_write:
         pickle.dump(db, db_file_write)
 
 
 def play_game():
+    db = load_db()
     state = [[] for i in range(game_width)]
     visited_states = []
     while True:
@@ -94,8 +94,8 @@ def play_game():
             state[my_move].append(1)
             print_state(state)
             winner = who_is_winner(state)
-            if winner is not None: # 1 == I am winner
-                propogate_game(winner, visited_states)
+            if winner is not None:  # 1 == I am winner
+                propogate_game(winner, visited_states, db)
                 break
             while True:
                 try:
@@ -109,8 +109,8 @@ def play_game():
                     
             state[his_move-1].append(0)
             winner = who_is_winner(state)
-            if winner is not None: # 1 == I am winner
-                propogate_game(winner, visited_states)
+            if winner is not None:  # 1 == I am winner
+                propogate_game(winner, visited_states, db)
                 break
         
         print('I Won! FeelsBadMan for you' if winner else 'You Win! Congrats')
@@ -121,12 +121,19 @@ def play_game():
             print('yes or no only please.')
         
         if another == 'no':
-            save_db()
+            save_db(db)
             break
 
 if __name__ == '__main__':
     import argparse
     parser = argparse.ArgumentParser(description='Play a game of 4 In A Row against MEFIARE')
+    parser.add_argument('-y', '--height', type=int, default=6)
+    parser.add_argument('-w', '--width', type=int, default=7)
+    parser.add_argument('-f', '--db-file', type=str, default='4row.db')
     args = parser.parse_args()
-    # Add arguments when needed
+
+    game_width = args.width
+    game_height = args.height
+    db_file_name = args.db_file
+
     play_game()
