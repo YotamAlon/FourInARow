@@ -1,80 +1,65 @@
-import pexpect
-
-games_to_play=0
-
 import signal
-def ctrl_C_handler(*args):
-    print('\nCaught ctrl-C with args: ' + str(args))
+
+
+def ctrl_c_handler(*args):
+    print('\nCaught ctrl-C. Stopping gracefully...')
     global games_to_play
-    games_to_play=0
-signal.signal(signal.SIGINT, ctrl_C_handler)
+    games_to_play = 0
+signal.signal(signal.SIGINT, ctrl_c_handler)
 
 
 def get_game_width(text):
-    print("Text: \n {}".format(text))
     import re
-    pattern = re.search(r'\[1-(\d)\]', text).group(0)
-    print('Got {} from {}'.format(pattern, text))
-    return pattern
+    pattern = re.search(r'\[1-(\d)\]', text).group(0)[3:-1]
+    return int(pattern)
 
 
 def make_a_move(game_width):
     from random import choice
-    return choice(range(1, game_width + 1))
+    return str(choice(range(1, game_width + 1)))
 
 
-def play_game():
-    global games_to_play
-    MEFIARE = pexpect.spawn('python MEFIARE.py', encoding='utf-8')
-    print('Spawned MEFIARE')
-    import time
-    while True:
-        case = MEFIARE.expect(['X', r'g', pexpect.EOF])
-        print(MEFIARE.read())
-        if case == 0:
-            MEFIARE.sendline(make_a_move(get_game_width(MEFIARE.read())))
-        if case == 1:
-            if games_to_play == 0:
-                MEFIARE.send('no\n')
-                MEFIARE.expect(pexpect.EOF)
-                print('MEFIARE ended')
-            else:
-                print('Finished a game. left: {} (-1=until ctrl-C)'.format(games_to_play))
-                games_to_play -= 1
-                MEFIARE.send('yes\n')
-        if case == 2:
-            print('MEFIARE exited unexpectedly')
-            break
-
-
-def play_game2():
+def play_games():
     import subprocess
     import time
+    started = time.time()
     global games_to_play
-    MEFIARE = subprocess.Popen(['python', 'MEFIARE.py'], stdout=subprocess.PIPE)
-    output = MEFIARE.output.read()[-50:]
+    games_played = 0
+    games_won = 0
+    MEFIARE = subprocess.Popen(['python', 'MEFIARE.py'],
+                               stdout=subprocess.PIPE,
+                               stdin=subprocess.PIPE)
+    print('Spawned MEFIARE')
+    print('Now training MEFIARE for {} games'. format(games_to_play))
     while True:
-        if 'next' in output:
-            output = MEFIARE.communicate(make_a_move(get_game_width(output)))[0]
-        elif 'game' in output:
+        output = str(MEFIARE.stdout.readline())
+        if 'next?' in output:
+            MEFIARE.stdin.write(bytearray(make_a_move(get_game_width(output)) + '\n', encoding='utf-8'))
+            MEFIARE.stdin.flush()
+        elif 'game?' in output:
             if games_to_play == 0:
-                output = MEFIARE.communicate('no\n')[0]
-                print('MEFIARE exited')
+                MEFIARE.stdin.write(b'no\n')
+                MEFIARE.stdin.flush()
+                print('MEFIARE Done')
+                print('Stats for nerds:')
+                print('I played {} games, out of those, I won {} games'.format(games_played, games_won))
+                print('I was running for {} seconds'.format(time.time() - started))
                 break
             else:
-                print('Finished a game. left: {} (-1=until ctrl-C)'.format(games_to_play))
                 games_to_play -= 1
-                output = MEFIARE.communicate('yes\n')[0]
-        else:
-            print(output)
-            print('Unknown error occurred')
-            break
+                games_played += 1
+                print('Finished a game. left: {} (-1=until ctrl-C)'.format(games_to_play))
+                MEFIARE.stdin.write(b'yes\n')
+                MEFIARE.stdin.flush()
+        elif 'You Win' in output:
+            games_won += 1
 
 
 if __name__ == "__main__":
     import argparse
     parser = argparse.ArgumentParser()
+    parser.add_argument('-g', '--games', type=int, default=1)
     args = parser.parse_args()
-    
-    play_game2()
+    games_to_play = args.games
+    play_games()
     
