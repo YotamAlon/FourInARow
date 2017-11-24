@@ -12,9 +12,9 @@ While MEFIARE is not coded in a similar way to other neural networks, there is a
 
 ## Usage Information
 To play against MEFIARE simply type in console:
-'''
+```
 python MEFIARE.py
-'''
+```
 
 A few command line options:
  - -t/--training-mode - do not print unnecessary information. For training purposes
@@ -24,9 +24,9 @@ A few command line options:
  
  
  To train MEFIARE before playing against it, use the command:
- '''
+ ```
  python GAP.py
- '''
+ ```
 
 Command line options:
  - -g/--games - The wanted number of games to train (default=1). Enter -1  to play indefinitely.
