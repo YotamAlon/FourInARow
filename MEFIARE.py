@@ -107,7 +107,6 @@ def play_game(training_mode):
             # Check if I am the winner
             winner = who_is_winner(state)
             if winner is not None:  # 1 == I am winner
-                propogate_game(winner, visited_states, db)
                 break
             
             # Now you make your move
@@ -125,12 +124,12 @@ def play_game(training_mode):
             # Check if you are the winner
             winner = who_is_winner(state)
             if winner is not None:  # 1 == I am winner
-                propogate_game(winner, visited_states, db)
                 break
         
         # Print game result
         if winner in [0, 1]:
             print('I Won! FeelsBadMan for you' if winner else 'You Win! Congrats')
+            propogate_game(winner, visited_states, db)
         else:
             print('This is a tie!')
         
