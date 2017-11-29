@@ -37,6 +37,8 @@ def print_state(state):
 
 def who_is_winner(state):
     # Vertical win
+    if all([len(column) == game_height for column in state]):
+        return 2
     for i in range(game_width):
         for j in range(game_height - 3):
             try:
@@ -75,6 +77,8 @@ def propogate_game(winner, visited_states, db):
     for state, my_move in visited_states:
         db[state] = [chance * (1.1 - 0.2 * winner) for chance in db[state]]
         db[state][my_move] *= ((0.9 + 0.2 * winner) / (1.1 - 0.2 * winner))
+        state_sum = sum(db[state])
+        db[state] = [pos / state_sum for pos in db[state]]
 
 
 def save_db(db):
@@ -84,21 +88,29 @@ def save_db(db):
 
 def play_game(training_mode):
     db = load_db()
-    state = [[] for i in range(game_width)]
-    visited_states = []
     while True:
+        state = [[] for i in range(game_width)]
+        visited_states = []
         if not training_mode:
             print("Starting a new game:")
         while True:
-            my_move = get_move_int(random(), db, dumps(state))
+            # I make my move
+            while True:
+                my_move = get_move_int(random(), db, dumps(state))
+                if len(state[my_move-1]) < game_height:
+                    break
             visited_states.append((dumps(state), my_move))
             state[my_move].append(1)
             if not training_mode:
                 print_state(state)
+            
+            # Check if I am the winner
             winner = who_is_winner(state)
             if winner is not None:  # 1 == I am winner
                 propogate_game(winner, visited_states, db)
                 break
+            
+            # Now you make your move
             while True:
                 try:
                     his_move = int(input("Where would you like to play next? [1-%d]\n >> " % game_width))
@@ -108,20 +120,28 @@ def play_game(training_mode):
                 if his_move - 1 < game_width and len(state[his_move-1]) < game_height:
                     break
                 print('This move is not allowed')
-                    
             state[his_move-1].append(0)
+            
+            # Check if you are the winner
             winner = who_is_winner(state)
             if winner is not None:  # 1 == I am winner
                 propogate_game(winner, visited_states, db)
                 break
         
-        print('I Won! FeelsBadMan for you' if winner else 'You Win! Congrats')
+        # Print game result
+        if winner in [0, 1]:
+            print('I Won! FeelsBadMan for you' if winner else 'You Win! Congrats')
+        else:
+            print('This is a tie!')
+        
+        # Do you want to play another?
         while True:
             another = input("Would you like to play another game? (yes/no)\n >> ")
             if another in ['yes', 'no']:
                 break
             print('yes or no only please.')
         
+        # If no, exit. If yes, restart the loop
         if another == 'no':
             save_db(db)
             break

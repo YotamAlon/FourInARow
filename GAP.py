@@ -33,7 +33,7 @@ def play_games(MEFIARE_args):
     global games_to_play
     games_played = 0
     games_won = 0
-    MEFIARE = subprocess.Popen(['python', 'MEFIARE.py', '-t'] + MEFIARE_args,
+    MEFIARE = subprocess.Popen(['python3', 'MEFIARE.py', '-t'] + MEFIARE_args,
                                stdout=subprocess.PIPE,
                                stdin=subprocess.PIPE)
     print('Spawned MEFIARE')
