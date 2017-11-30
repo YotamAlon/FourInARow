@@ -10,9 +10,9 @@ def load_db():
             try:
                 db = pickle.load(db_file_read)
             except EOFError:
-                db = {}
+                db = {'games': 0}
     else:
-        db = {}
+        db = {'games': 0}
     return db
 
 
@@ -71,6 +71,7 @@ def who_is_winner(state):
 
 
 def propogate_game(winner, visited_states, db):
+    db['games'] += 1
     for state, my_move in visited_states:
         db[state] = [chance * (1.1 - 0.2 * winner) for chance in db[state]]
         db[state][my_move-1] *= ((0.9 + 0.2 * winner) / (1.1 - 0.2 * winner))
