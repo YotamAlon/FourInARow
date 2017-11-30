@@ -1,8 +1,4 @@
-try:
-    import cpickle as pickle
-except ImportError:
-    import pickle
-
+import pickle
 from json import dumps
 from random import random
 from os.path import exists
@@ -25,13 +21,14 @@ def get_move_int(rand, db, state):
         db[state] = [1. / game_width for i in range(game_width)]
     for i in range(game_width):
         if sum(db[state][:i+1]) > rand:
-            return i
+            return i+1
 
 
 def print_state(state):
+    print('|'.join([str(i+1) for i in range(game_width)]))
     for i in range(game_height - 1, -1, -1):
         print('|'.join([('X' if state[j][i] else 'O')
-                        if len(state[j]) > i else '-'
+                        if len(state[j]) > i else ' '
                         for j in range(game_width)]))
 
 
@@ -76,7 +73,7 @@ def who_is_winner(state):
 def propogate_game(winner, visited_states, db):
     for state, my_move in visited_states:
         db[state] = [chance * (1.1 - 0.2 * winner) for chance in db[state]]
-        db[state][my_move] *= ((0.9 + 0.2 * winner) / (1.1 - 0.2 * winner))
+        db[state][my_move-1] *= ((0.9 + 0.2 * winner) / (1.1 - 0.2 * winner))
         state_sum = sum(db[state])
         db[state] = [pos / state_sum for pos in db[state]]
 
@@ -100,7 +97,7 @@ def play_game(training_mode):
                 if len(state[my_move-1]) < game_height:
                     break
             visited_states.append((dumps(state), my_move))
-            state[my_move].append(1)
+            state[my_move-1].append(1)
             if not training_mode:
                 print_state(state)
             
@@ -116,7 +113,7 @@ def play_game(training_mode):
                 except ValueError:
                     print('Please select one of the numbers specified.')
                     continue
-                if his_move - 1 < game_width and len(state[his_move-1]) < game_height:
+                if 1 <= his_move <= game_width and len(state[his_move-1]) < game_height:
                     break
                 print('This move is not allowed')
             state[his_move-1].append(0)
