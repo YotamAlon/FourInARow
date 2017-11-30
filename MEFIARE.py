@@ -1,20 +1,30 @@
-import pickle
+import pymongo
 from json import dumps
 from random import random
 from os.path import exists
 
 
-def load_db():
-    if exists(db_file_name):
-        with open(db_file_name, 'rb') as db_file_read:
-            try:
-                db = pickle.load(db_file_read)
-            except EOFError:
-                db = {'games': 0}
-    else:
-        db = {'games': 0}
-    return db
+class DBHandler(object):
+    host = 'localhost'
+    port = 27017
+    db = 'four_row_db'
+    collection = None
+    
+    def __init__(self, **kwargs):
+        for key, value in kwargs.items():
+            if hasattr(self, key):
+                setattr(self, key, value)
+    
+    def __getitem__(self, key):
+        pass
+    
+    def __setitem__(self, key, value):
+        pass
+    
 
+def load_db():
+    db = DBHandler(collection=db_collection_name)
+    
 
 def get_move_int(rand, db, state):
     if state not in db:
@@ -149,14 +159,15 @@ if __name__ == '__main__':
     parser.add_argument('-t', '--training-mode', action='store_true', default=False)
     parser.add_argument('-y', '--height', type=int, default=6)
     parser.add_argument('-w', '--width', type=int, default=7)
-    parser.add_argument('-f', '--db-file', type=str, default='4row.db')
+    parser.add_argument('-c', '--db-collection', type=str, default='4row')
     args = parser.parse_args()
 
     game_width = args.width
     game_height = args.height
-    db_file_name = args.db_file
+    db_collection_name = args.db_collection
     if args.training_mode:
         import signal
         signal.signal(signal.SIGINT, signal.SIG_IGN)
 
     play_game(args.training_mode)
+    
