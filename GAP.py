@@ -68,7 +68,7 @@ if __name__ == "__main__":
     parser.add_argument('-g', '--games', type=int)
     parser.add_argument('-y', '--height', type=str)
     parser.add_argument('-w', '--width', type=str)
-    parser.add_argument('-f', '--db-file', type=str)
+    parser.add_argument('-c', '--collection-name', type=str)
     args = parser.parse_args()
     games_to_play = args.games
 
@@ -77,7 +77,7 @@ if __name__ == "__main__":
         MEFIARE_args += ['-y', args.height]
     if args.width is not None:
         MEFIARE_args += ['-w', args.width]
-    if args.db_file is not None:
-        MEFIARE_args += ['-f', args.db_file]
+    if args.collection_name is not None:
+        MEFIARE_args += ['-c', args.collection_name]
     play_games(MEFIARE_args)
     
