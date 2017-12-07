@@ -7,28 +7,52 @@ from os.path import exists
 class DBHandler(object):
     host = 'localhost'
     port = 27017
-    db = 'four_row_db'
+    db_name = 'four_row_db'
+    collection_name = 'default'
     collection = None
+    meta_attrs = ['games']
     
     def __init__(self, **kwargs):
         for key, value in kwargs.items():
             if hasattr(self, key):
                 setattr(self, key, value)
+        from pymongo import MongoClient
+        client = MongoClient()
+        self.collection = client[self.db_name][self.collection_name]
+        if 'state' not in self.collection.index_information():
+            self.collection.create_index('state')
+        if self.collection.find_one({'state': 'meta'}) is None:
+            self.collection.insert_one({'state': 'meta', 'games': 0})
     
     def __getitem__(self, key):
-        pass
+        if key in self.meta_attrs:
+            value = self.collection.find_one({'state': 'meta'})
+            return value[key]
+        else:
+            value = self.collection.find_one({'state': key})
+            if value is None:
+                self.collection.insert_one({'state': key,
+                                       'chances': [1. / game_width for i in range(game_width)]})
+                value = self.collection.find_one({'state': key})
+            return value['chances']
     
     def __setitem__(self, key, value):
-        pass
+        if key in self.meta_attrs:
+            self.collection.update_one({'state': 'meta'}, {'$set': {key: value}})
+        else:
+            self.collection.update_one({'state': key}, {'$set': {'chances': value}})
+    
+    def __iadd__(self, inc):
+        self.collection.update_one({'state': 'meta'}, {'$inc': {'games': inc}})
     
 
 def load_db():
-    db = DBHandler(collection=db_collection_name)
+    db = DBHandler(collection_name=db_collection_name)
+    return db
     
 
 def get_move_int(rand, db, state):
-    if state not in db:
-        db[state] = [1. / game_width for i in range(game_width)]
+    db[state] = [1. / game_width for i in range(game_width)]
     for i in range(game_width):
         if sum(db[state][:i+1]) > rand:
             return i+1
@@ -89,11 +113,6 @@ def propogate_game(winner, visited_states, db):
         db[state] = [pos / state_sum for pos in db[state]]
 
 
-def save_db(db):
-    with open(db_file_name, 'wb+') as db_file_write:
-        pickle.dump(db, db_file_write)
-
-
 def play_game(training_mode):
     db = load_db()
     while True:
@@ -150,7 +169,6 @@ def play_game(training_mode):
         
         # If no, exit. If yes, restart the loop
         if another == 'no':
-            save_db(db)
             break
 
 if __name__ == '__main__':
