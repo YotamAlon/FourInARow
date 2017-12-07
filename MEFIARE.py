@@ -11,6 +11,7 @@ class DBHandler(object):
     collection_name = 'default'
     collection = None
     meta_attrs = {'games': 0}
+    cache = {}
     
     def __init__(self, **kwargs):
         for key, value in kwargs.items():
@@ -25,26 +26,45 @@ class DBHandler(object):
             self.collection.insert_one({**{'state': 'meta'}, **self.meta_attrs})
     
     def __getitem__(self, key):
-        if key in self.meta_attrs:
+        if key in self.cache:
+            return self.cache[key]
+        elif key in self.meta_attrs:
             value = self.collection.find_one({'state': 'meta'})
             return value[key]
         else:
-            value = self.collection.find_one({'state': key})
-            if value is None:
-                self.collection.insert_one({'state': key,
-                                       'chances': [1. / game_width for i in range(game_width)]})
-                value = self.collection.find_one({'state': key})
+            value = self.collection.find_one_and_update(
+                {'state': key}, 
+                {'$setOnInsert': {
+                    'state': key,
+                    'chances': [1. / game_width for i in range(game_width)]}},
+                upsert=True,
+                return_document=pymongo.ReturnDocument.AFTER)
             return value['chances']
     
     def __setitem__(self, key, value):
-        if key in self.meta_attrs:
-            self.collection.update_one({'state': 'meta'}, {'$set': {key: value}})
-        else:
-            self.collection.update_one({'state': key}, {'$set': {'chances': value}})
+        self.cache[key] = value
     
     def __iadd__(self, inc):
-        self.collection.update_one({'state': 'meta'}, {'$inc': {'games': inc}})
+        if 'games' not in self.cache:
+            self.cache['games'] = self.collection.find_one({'state': 'meta'})['games']
+        self.cache['games'] += 1
     
+    def save(self):
+        from pymongo import UpdateOne
+        requests = []
+        for key in self.cache:
+            if key not in self.meta_attrs:
+                requests.append(UpdateOne(
+                    {'state': key}, 
+                    {'$set': {'state': key,
+                              'chances': self.cache[key]}},
+                    upsert=True))
+        requests.append(UpdateOne(
+            {'state': 'meta'},
+            {'$set': {key: self.cache[key] for key in self.meta_attrs 
+                      if key in self.cache}}, upsert=True))
+        self.collection.bulk_write(requests, ordered=False)
+        
 
 def load_db():
     db = DBHandler(collection_name=db_collection_name)
@@ -113,6 +133,10 @@ def propogate_game(winner, visited_states, db):
         db[state] = [pos / state_sum for pos in db[state]]
 
 
+def save_db(db):
+    db.save()
+    
+    
 def play_game(training_mode):
     db = load_db()
     while True:
@@ -169,6 +193,7 @@ def play_game(training_mode):
         
         # If no, exit. If yes, restart the loop
         if another == 'no':
+            db.save()
             break
 
 if __name__ == '__main__':
