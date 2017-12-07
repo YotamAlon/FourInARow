@@ -10,7 +10,7 @@ class DBHandler(object):
     db_name = 'four_row_db'
     collection_name = 'default'
     collection = None
-    meta_attrs = ['games']
+    meta_attrs = {'games': 0}
     
     def __init__(self, **kwargs):
         for key, value in kwargs.items():
@@ -22,7 +22,7 @@ class DBHandler(object):
         if 'state' not in self.collection.index_information():
             self.collection.create_index('state')
         if self.collection.find_one({'state': 'meta'}) is None:
-            self.collection.insert_one({'state': 'meta', 'games': 0})
+            self.collection.insert_one({**{'state': 'meta'}, **self.meta_attrs})
     
     def __getitem__(self, key):
         if key in self.meta_attrs:
